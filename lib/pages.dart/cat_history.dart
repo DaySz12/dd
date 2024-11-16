@@ -44,6 +44,7 @@ class _CatHistoryPageState extends State<CatHistoryPage> {
       setState(() {
         cats = snapshot.docs.map((doc) {
           return Cat(
+            id: doc.id,
             name: doc['name'],
             birthDate: (doc['birthDate'] as Timestamp).toDate(),
             description: doc['description'],
@@ -58,6 +59,15 @@ class _CatHistoryPageState extends State<CatHistoryPage> {
     await FirebaseFirestore.instance.collection('cats').add({
       'name': cat.name,
       'birthDate': Timestamp.fromDate(cat.birthDate), // แปลงเป็น Timestamp
+      'description': cat.description,
+      'imagePath': cat.imagePath,
+    });
+  }
+
+  void updateCatInFirestore(Cat cat) async {
+    await FirebaseFirestore.instance.collection('cats').doc(cat.id).update({
+      'name': cat.name,
+      'birthDate': Timestamp.fromDate(cat.birthDate),
       'description': cat.description,
       'imagePath': cat.imagePath,
     });
@@ -87,7 +97,19 @@ class _CatHistoryPageState extends State<CatHistoryPage> {
           itemCount: cats.length,
           itemBuilder: (context, index) {
             final cat = cats[index];
-            return CatCard(cat: cat);
+            return CatCard(
+              cat: cat,
+              onEdit: (updatedCat) {
+                // เปิด dialog สำหรับการแก้ไขข้อมูล
+                showDialog(
+                  context: context,
+                  builder: (context) => AddCatDialog(
+                    cat: updatedCat,
+                    onAdd: updateCatInFirestore,
+                  ),
+                );
+              },
+            );
           },
         ),
       ),
@@ -97,8 +119,10 @@ class _CatHistoryPageState extends State<CatHistoryPage> {
 
 class CatCard extends StatelessWidget {
   final Cat cat;
+  final Function(Cat) onEdit;
 
-  const CatCard({Key? key, required this.cat}) : super(key: key);
+  const CatCard({Key? key, required this.cat, required this.onEdit})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -156,6 +180,13 @@ class CatCard extends StatelessWidget {
                 ],
               ),
             ),
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                // ฟังก์ชันการแก้ไข
+                onEdit(cat); // ส่งข้อมูลของแมวที่ต้องการแก้ไขไปยัง dialog
+              },
+            ),
           ],
         ),
       ),
@@ -164,23 +195,38 @@ class CatCard extends StatelessWidget {
 }
 
 class Cat {
+  String id; // เพิ่ม id สำหรับระบุเอกลักษณ์ใน Firestore
   final String name;
   final DateTime birthDate; // อายุแมวเป็น DateTime
   final String description;
   final String imagePath;
 
   Cat({
+    this.id = '',
     required this.name,
     required this.birthDate,
     required this.description,
     required this.imagePath,
   });
+
+  factory Cat.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Cat(
+      id: doc.id,
+      name: data['name'],
+      birthDate: (data['birthDate'] as Timestamp).toDate(),
+      description: data['description'],
+      imagePath: data['imagePath'],
+    );
+  }
 }
 
 class AddCatDialog extends StatefulWidget {
   final Function(Cat) onAdd;
+  final Cat? cat;
 
-  const AddCatDialog({Key? key, required this.onAdd}) : super(key: key);
+  const AddCatDialog({Key? key, required this.onAdd, this.cat})
+      : super(key: key);
 
   @override
   _AddCatDialogState createState() => _AddCatDialogState();
@@ -193,6 +239,17 @@ class _AddCatDialogState extends State<AddCatDialog> {
   String? imagePath;
 
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.cat != null) {
+      nameController.text = widget.cat!.name;
+      descriptionController.text = widget.cat!.description;
+      birthDate = widget.cat!.birthDate;
+      imagePath = widget.cat!.imagePath;
+    }
+  }
 
   Future<void> _pickImage() async {
     final XFile? pickedFile =
@@ -207,7 +264,7 @@ class _AddCatDialogState extends State<AddCatDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add New Cat'),
+      title: Text(widget.cat == null ? 'Add New Cat' : 'Edit Cat'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -224,7 +281,7 @@ class _AddCatDialogState extends State<AddCatDialog> {
             onTap: () async {
               DateTime? selectedDate = await showDatePicker(
                 context: context,
-                initialDate: DateTime.now(),
+                initialDate: birthDate ?? DateTime.now(),
                 firstDate: DateTime(2000),
                 lastDate: DateTime.now(),
               );
@@ -261,20 +318,21 @@ class _AddCatDialogState extends State<AddCatDialog> {
         TextButton(
           onPressed: () {
             if (birthDate != null && imagePath != null) {
-              final newCat = Cat(
+              final updatedCat = Cat(
+                id: widget.cat?.id ?? '',
                 name: nameController.text,
                 birthDate: birthDate!,
                 description: descriptionController.text,
-                imagePath: imagePath!, // เก็บ path ของภาพ
+                imagePath: imagePath!,
               );
-              widget.onAdd(newCat);
+              widget.onAdd(updatedCat);
               Navigator.pop(context);
             } else {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                   content: Text('Please select a birth date and image')));
             }
           },
-          child: const Text('Add'),
+          child: const Text('Save'),
         ),
         TextButton(
           onPressed: () {

@@ -29,13 +29,13 @@ class _ProfileState extends State<Profile> {
       final UploadTask task = firebassStorageRef.putFile(selectedImage!);
 
       var downloadUrl = await (await task).ref.getDownloadURL();
-      await SharedPreferenceHelper().saveUserDisplayName(downloadUrl);
+      await SharedPreferenceHelper().saveUserPic(downloadUrl);
       setState(() {});
     }
   }
 
   getthesharedpref() async {
-    profile = await SharedPreferenceHelper().getDisplayName();
+    profile = await SharedPreferenceHelper().getPicId();
     name = await SharedPreferenceHelper().getUserName();
     email = await SharedPreferenceHelper().getEmailId();
     setState(() {});
@@ -89,7 +89,7 @@ class _ProfileState extends State<Profile> {
                                         },
                                         child: profile == null
                                             ? Image.asset(
-                                                'images/godji.png',
+                                                'images/.png',
                                                 height: 120,
                                                 width: 120,
                                                 fit: BoxFit.cover,
@@ -112,7 +112,7 @@ class _ProfileState extends State<Profile> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'Poomrapee Patum',
+                                name!,
                                 style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 25,
@@ -158,7 +158,7 @@ class _ProfileState extends State<Profile> {
                                           color: Colors.black,
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold)),
-                                  Text('Poomrapee Patum',
+                                  Text(name!,
                                       style: TextStyle(
                                           color: Colors.black,
                                           fontSize: 18,
@@ -204,7 +204,7 @@ class _ProfileState extends State<Profile> {
                                           color: Colors.black,
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold)),
-                                  Text('daijirew123@gmail.com',
+                                  Text(email!,
                                       style: TextStyle(
                                           color: Colors.black,
                                           fontSize: 18,

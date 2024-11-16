@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myproject/pages.dart/cat_history.dart';
 import 'package:myproject/pages.dart/details.dart';
 import 'package:myproject/widget/widget_support.dart';
 
@@ -140,11 +141,13 @@ class _MyWidgetState extends State<home> {
       children: [
         GestureDetector(
           onTap: () {
-            cat = true;
-            paw = false;
-            backpack = false;
-            ball = false;
-            setState(() {});
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    CatHistoryPage(), // เปลี่ยนไปหน้าประวัติแมว
+              ),
+            );
           },
           child: Material(
             elevation: 5,
@@ -152,8 +155,9 @@ class _MyWidgetState extends State<home> {
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                  color: cat ? Colors.black : Colors.white,
-                  borderRadius: BorderRadius.circular(10)),
+                color: cat ? Colors.black : Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Image.asset(
                 'images/cat.png',
                 height: 50,
